@@ -1,27 +1,59 @@
-import edu.princeton.cs.algs4.MinPQ;
+
 import edu.princeton.cs.algs4.StdRandom;
 import edu.princeton.cs.algs4.Queue;
 import java.util.Arrays;
 
-public class Board {
+public final class Board {
     
-    private int[][] blocks;
+    private final int[][] blocks;
     private int hamming;
-    private int manhattan;
-    private int n;
-    private int[] matrixArray;
+    private final int manhattan;
+    private final int n;
     private int emptySpaceIndex;
-    private Queue<Board> neighbors;
     
     // construct a board from an n-by-n array of blocks
     // (where blocks[i][j] = block in row i, column j)
     public Board(int[][] blocks) {
     
-        this.blocks = blocks;
-        this.hamming = -1;
-        this.manhattan = -1;
         this.n = blocks.length;
-        this.matrixArray = new int[n * n];
+        this.blocks = new int[n][n];
+        
+        for (int i = 0; i < n; i++) {
+        
+            this.blocks[i] = Arrays.copyOf(blocks[i], blocks[i].length);
+        }
+        
+        for (int i = 0; i < this.blocks.length; i++) {
+        
+            for (int j = 0; j < this.blocks.length; j++) {
+        
+                if (this.blocks[i][j] == 0) {
+                
+                    this.emptySpaceIndex = i*n + j;
+                    break;
+                }
+            }
+        }
+        
+        this.hamming = -1;
+        int manhattanCount = 0;
+        
+        int[] matrixArray = matrixToArray();
+        for (int i = 0; i < matrixArray.length; i++) { 
+        
+            if (matrixArray[i] == 0) {
+            
+                continue;
+            }
+            manhattanCount += calculateManhattanDistanceForBlock(matrixArray[i], i);
+        }
+        
+        this.manhattan = manhattanCount;
+    }
+    
+    private int[] matrixToArray() {
+    
+        int[] matrixArray = new int[n * n];
         int count = 0;
         for (int i = 0; i < blocks.length; i++) {
         
@@ -31,9 +63,11 @@ public class Board {
                 
                     this.emptySpaceIndex = count;
                 }
-                this.matrixArray[count++] = blocks[i][j];
+                matrixArray[count++] = blocks[i][j];
             }
         }
+        
+        return matrixArray;
     }
     
     // board dimension n    
@@ -51,6 +85,9 @@ public class Board {
         }
         
         this.hamming = 0;
+        
+        int[] matrixArray = matrixToArray();
+        
         for (int i = 1; i <= matrixArray.length; i++) {
         
             if (i != matrixArray[i-1] && matrixArray[i-1] != 0) {
@@ -65,21 +102,6 @@ public class Board {
     // sum of Manhattan distances between blocks and goal
     public int manhattan() {
     
-        if (this.manhattan != -1) {
-            
-            return this.manhattan;
-        }
-        
-        this.manhattan = 0;
-        for (int i = 0; i < matrixArray.length; i++) { 
-        
-            if (matrixArray[i] == 0) {
-            
-                continue;
-            }
-            this.manhattan += calculateManhattanDistanceForBlock(matrixArray[i], i);
-        }
-        
         return this.manhattan;
     }
     
@@ -107,11 +129,13 @@ public class Board {
     // is this board the goal board?
     public boolean isGoal() {
     
-        return manhattan() == 0 && hamming() == 0;
+        return manhattan() == 0;
     }
     
     // a board that is obtained by exchanging any pair of blocks
     public Board twin() {
+        
+        int[] matrixArray = matrixToArray();
     
         int randomBlock1 = StdRandom.uniform(n*n);
         while (matrixArray[randomBlock1] == 0) {
@@ -134,14 +158,14 @@ public class Board {
     
     private int[][] arrayToMatrix(int[] array) {
         
-        int[][] matrix = new int[n][n];
+        int[][] newBlocks = new int[n][n];
         for (int i = 0; i < n; i++) {
         
             for (int j = 0; j < n; j++) {
-                matrix[i][j] = array[i*n + j];
+                newBlocks[i][j] = array[i*n + j];
             }
         }
-        return matrix;
+        return newBlocks;
     }
     
     // does this board equal y?
@@ -150,7 +174,7 @@ public class Board {
         if (y == this) return true;
         if (y == null) return false;
         if (y.getClass() != this.getClass()) return false;
-        Board that = (Board)y;
+        Board that = (Board) y;
         if (this.dimension() != that.dimension()) return false;
         
         for (int i = 0; i < this.blocks.length; i++) {
@@ -165,48 +189,42 @@ public class Board {
     }
     
     // all neighboring boards
+    
     public Iterable<Board> neighbors() {
     
-        getNeighbors();
-        return this.neighbors;
+        return getNeighbors();
     }
     
-    private void getNeighbors() {
+    private Queue<Board> getNeighbors() {
     
-        this.neighbors = new Queue<Board>();
+        Queue<Board> neighbors = new Queue<Board>();
         int emptyBlockX = xCoordinate(emptySpaceIndex);
         int emptyBlockY = yCoordinate(emptySpaceIndex);
  
-        if (canMoveLeft(emptyBlockX)) {
-            
-            int[] newMatrixArray = Arrays.copyOf(matrixArray, n*n);
-            int leftIndex = emptyBlockX - 1 + n*emptyBlockY;  
-            addNeighbor(newMatrixArray, leftIndex);
+        if (canMoveLeft(emptyBlockY)) {
+            int leftIndex = emptyBlockY - 1 + n*emptyBlockX;  
+            addNeighbor(neighbors, matrixToArray(), leftIndex);
         }
         
-        if (canMoveRight(emptyBlockX)) {
-            
-            int[] newMatrixArray = Arrays.copyOf(matrixArray, n*n);
-            int rightIndex = emptyBlockX + 1 + n*emptyBlockY;
-            addNeighbor(newMatrixArray, rightIndex);
+        if (canMoveRight(emptyBlockY)) {
+            int rightIndex = emptyBlockY + 1 + n*emptyBlockX;
+            addNeighbor(neighbors, matrixToArray(), rightIndex);
         }
         
-        if (canMoveUp(emptyBlockY)) {
-            
-            int[] newMatrixArray = Arrays.copyOf(matrixArray, n*n);
-            int topIndex = emptyBlockX + n*(emptyBlockY - 1); 
-            addNeighbor(newMatrixArray, topIndex);
+        if (canMoveUp(emptyBlockX)) {
+            int topIndex = emptyBlockY + n*(emptyBlockX - 1); 
+            addNeighbor(neighbors, matrixToArray(), topIndex);
         }
         
-        if (canMoveDown(emptyBlockY)) {
-            
-            int[] newMatrixArray = Arrays.copyOf(matrixArray, n*n);
-            int bottomIndex = emptyBlockX + n*(emptyBlockY + 1); 
-            addNeighbor(newMatrixArray, bottomIndex);
+        if (canMoveDown(emptyBlockX)) {
+            int bottomIndex = emptyBlockY + n*(emptyBlockX + 1);
+            addNeighbor(neighbors, matrixToArray(), bottomIndex);
         }
+        
+        return neighbors;
     }
     
-    private void addNeighbor(int[] array, int exchIndex) {
+    private void addNeighbor(Queue<Board> neighbors, int[] array, int exchIndex) {
         int temp = array[emptySpaceIndex];
         array[emptySpaceIndex] = array[exchIndex];
         array[exchIndex] = temp;
@@ -292,7 +310,7 @@ public class Board {
         System.out.println("Manhattan: "+ b2.manhattan());
         System.out.println("Is Goal?: "+ b2.isGoal());
         
-        for (Board n : b.neighbors()){
+        for (Board n : b.neighbors()) {
         
             System.out.println("Board: "+ n);
         }
@@ -313,7 +331,7 @@ public class Board {
         System.out.println("Manhattan: "+ b.manhattan());
         System.out.println("Is Goal?: "+ b.isGoal());
         
-        for (Board n : b.neighbors()){
+        for (Board n : b.neighbors()) {
         
             System.out.println("Board: "+ n);
         }

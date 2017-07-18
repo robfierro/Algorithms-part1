@@ -32,23 +32,38 @@ public class PuzzleChecker {
 
     public static void main(String[] args) {
 
-//        // for each command-line argument
-//        for (String filename : args) {
-//
-//            // read in the board specified in the filename
-//            In in = new In(filename);
-//            int n = in.readInt();
-//            int[][] tiles = new int[n][n];
-//            for (int i = 0; i < n; i++) {
-//                for (int j = 0; j < n; j++) {
-//                    tiles[i][j] = in.readInt();
-//                }
+        // for each command-line argument
+        for (String filename : args) {
+
+            // read in the board specified in the filename
+            In in = new In(filename);
+            int n = in.readInt();
+            int[][] tiles = new int[n][n];
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    tiles[i][j] = in.readInt();
+                }
+            }
+
+            // solve the slider puzzle
+            Board initial = new Board(tiles);
+            StdOut.println(initial);
+//            for (Board b : initial.neighbors()) {
+//            
+//                StdOut.println(b);
 //            }
-//
-//            // solve the slider puzzle
-//            Board initial = new Board(tiles);
-//            Solver solver = new Solver(initial);
-//            StdOut.println(filename + ": " + solver.moves());
+            
+            Solver solver = new Solver(initial);
+            StdOut.println("Moves: " + solver.moves());
+            StdOut.println("Solution: " + solver.solution());
+            StdOut.println("Solution: " + solver.solution());
+            
+            
+//            for (Board b : solver.solution()) {
+//                
+//                StdOut.println(b);
+//            }
+            //StdOut.println(filename + ": " + solver.moves());
         }
     }
 }
